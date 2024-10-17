@@ -3450,4 +3450,4 @@ export const referringProvidersList: string[] = [
   "ZUPNICK, HENRY",
   "ZWEIG, SUSAN",
   "ZYGMANT, AMANDA F",
-];
+] as const;

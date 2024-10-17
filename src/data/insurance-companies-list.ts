@@ -425,4 +425,4 @@ export const insuranceCompaniesList: string[] = [
   "WPS",
   "WPS TRICARE FOR LIFE",
   "WTC HEALTH PROGRAM",
-];
+] as const;

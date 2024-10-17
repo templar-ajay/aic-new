@@ -13,60 +13,112 @@ import {
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css"; // Import the CSS for react-phone-input-2
 import InputMask from "react-input-mask"; // Import react-input-mask
-import { matchWordStart } from "@/lib/helper";
+import {
+  dateValidator,
+  handleAutoSelect,
+  matchWordStart,
+  validateUsPostCode,
+} from "@/lib/helper";
 
-// Sample data for the autocomplete fields
-const physicians = ["Dr. Smith", "Dr. Jones", "Dr. Patel", "Dr. Gomez"];
-const referringProviders = ["Provider A", "Provider B", "Provider C"];
-const contactMethods = ["Phone", "Email", "Text Message"];
-const birthSexOptions = ["Male", "Female", "Prefer Not to Say"];
-const insuranceCompanies = [
-  "Insurance Co A",
-  "Insurance Co B",
-  "Insurance Co C",
-];
+// data for the autocomplete fields
+import { physicianNamesList } from "@/data/physicians-list";
+import { referringProvidersList } from "@/data/referring-providers-list";
+const contactMethods = ["Email", "Home Number", "Mobile Number"] as const;
+const birthSexOptions = ["Male", "Female", "Prefer Not to Say"] as const;
+import { insuranceCompaniesList } from "@/data/insurance-companies-list";
 
 // Define the Zod schema
-const schema = z.object({
-  physician: z
-    .string()
-    .min(2, { message: "Physician name must be at least 2 characters" })
-    .max(50),
-  referring_provider: z
-    .string()
-    .min(2, { message: "Referring provider must be at least 2 characters" })
-    .max(50),
-  first_name: z
-    .string()
-    .min(2, { message: "First name must be at least 2 characters" })
-    .max(50),
-  middle_name: z.string().optional(),
-  last_name: z
-    .string()
-    .min(2, { message: "Last name must be at least 2 characters" })
-    .max(50),
-  mobile_number: z.string().min(10, { message: "Mobile number must be valid" }),
-  home_number: z
-    .string()
-    .optional()
-    .refine((value) => !value || value.length >= 10, {
-      message: "Home number must be valid",
+const schema = z
+  .object({
+    physician: z
+      .string()
+      .min(1, { message: "You must select a valid option for Physician" }),
+    referring_provider: z.string().min(1, {
+      message: "You must select a valid option for Referring Provider",
     }),
-  email: z.string().email({ message: "Invalid email address" }),
-  preferred_contact_method: z.string(),
-  birth_sex: z.enum(["Male", "Female", "Prefer Not to Say", ""]),
-  date_of_birth: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, {
-    message: "Date must be in mm-dd-yyyy format",
-  }),
-  address_line_1: z.string(),
-  city: z.string(),
-  state: z.string(),
-  postal_code: z.string(),
-  primary_insurance_company: z.string(),
-  primary_insurance_member_id: z.string(),
-  secondary_insurance_company: z.string().optional(),
-  secondary_insurance_member_id: z.string().optional(),
-});
+    first_name: z
+      .string()
+      .min(2, { message: "First name must be at least 2 characters" })
+      .max(50, { message: "First name must be at most 50 characters" }),
+    middle_name: z.string().optional(),
+    last_name: z
+      .string()
+      .min(2, { message: "Last name must be at least 2 characters" })
+      .max(50, { message: "Last name must be at most 50 characters" }),
+    mobile_number: z
+      .string()
+      .min(10, { message: "Mobile number must be valid US number" })
+      .optional(),
+    home_number: z
+      .string()
+      .optional()
+      .refine((value) => !value || value.length >= 10, {
+        message: "Home number must be a valid US number",
+      }),
+    email: z.string().email({ message: "Invalid email address" }),
+    preferred_contact_method: z.enum(contactMethods),
+    birth_sex: z.enum(birthSexOptions, {
+      errorMap: () => ({
+        message: "Invalid option for Birth Sex",
+      }),
+    }),
+    date_of_birth: z
+      .string()
+      .regex(/^\d{2}-\d{2}-\d{4}$/, {
+        message: "Date must be in mm-dd-yyyy format",
+      })
+      .refine(dateValidator, {
+        message: "Invalid date of birth",
+      }),
+    address_line_1: z
+      .string()
+      .min(5, { message: "Please enter a valid address" }),
+    city: z
+      .string()
+      .min(2, {
+        message: "Enter a valid city name",
+      })
+      .max(30, {
+        message: "Enter a valid city name",
+      }),
+    state: z.string().min(2, {
+      message: "Enter a valid state name",
+    }),
+    postal_code: z.string().refine(validateUsPostCode, {
+      message: "Enter a valid US postal code",
+    }),
+    primary_insurance_company: z
+      .string()
+      .min(1, { message: "Invalid Insurance Company" }),
+    primary_insurance_member_id: z
+      .string()
+      .min(5, { message: "Invalid Insurance Member ID" }),
+    secondary_insurance_company: z.string().optional(),
+    secondary_insurance_member_id: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Check if either mobile_number or home_number is provided
+    if (!data.mobile_number && !data.home_number) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Either mobile number or home number must be provided",
+        path: ["mobile_number"], // Attach error to mobile_number by default
+      });
+    }
+
+    // Check if both secondary_insurance_company and secondary_insurance_member_id are filled correctly
+    if (
+      data.secondary_insurance_member_id &&
+      !data.secondary_insurance_company
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Both secondary insurance company and secondary insurance member ID must be provided if one is filled",
+        path: ["secondary_insurance_company"], // Attach error to insurance company
+      });
+    }
+  });
 
 // Infer TypeScript types from the schema
 type FormData = z.infer<typeof schema>;
@@ -84,13 +136,6 @@ export default function ZodForm() {
 
   const onSubmit = (data: FormData) => {
     console.log(data);
-  };
-
-  const handleAutoSelect = (filteredOptions: string[], field: any) => {
-    if (filteredOptions.length === 1) {
-      setValue(field.name, filteredOptions[0]); // Auto-select when one option is left
-    }
-    return filteredOptions;
   };
 
   return (
@@ -114,13 +159,17 @@ export default function ZodForm() {
         render={({ field }) => (
           <Autocomplete
             {...field}
-            options={physicians}
+            value={field.value || ""}
+            openOnFocus
+            clearOnEscape
+            options={physicianNamesList}
             filterOptions={(options, state) =>
               handleAutoSelect(
                 options.filter((option) =>
                   matchWordStart(option, state.inputValue)
                 ),
-                field
+                field,
+                setValue
               )
             }
             renderInput={(params) => (
@@ -132,7 +181,7 @@ export default function ZodForm() {
                 helperText={errors.physician?.message}
               />
             )}
-            onChange={(_, value) => field.onChange(value)}
+            onChange={(_, value) => field.onChange(value || "")}
           />
         )}
       />
@@ -143,13 +192,17 @@ export default function ZodForm() {
         render={({ field }) => (
           <Autocomplete
             {...field}
-            options={referringProviders}
+            value={field.value || ""}
+            openOnFocus
+            clearOnEscape
+            options={referringProvidersList}
             filterOptions={(options, state) =>
               handleAutoSelect(
                 options.filter((option) =>
                   matchWordStart(option, state.inputValue)
                 ),
-                field
+                field,
+                setValue
               )
             }
             renderInput={(params) => (
@@ -161,7 +214,7 @@ export default function ZodForm() {
                 helperText={errors.referring_provider?.message}
               />
             )}
-            onChange={(_, value) => field.onChange(value)}
+            onChange={(_, value) => field.onChange(value || "")}
           />
         )}
       />
@@ -189,7 +242,6 @@ export default function ZodForm() {
       />
 
       <div className="flex flex-nowrap justify-between gap-1">
-        {/* Mobile Number with react-phone-input-2 */}
         <div>
           <InputLabel
             sx={{
@@ -220,8 +272,6 @@ export default function ZodForm() {
                 }}
                 inputProps={{
                   name: "mobile_number",
-                  required: true,
-                  autoFocus: true,
                 }}
               />
             )}
@@ -233,7 +283,6 @@ export default function ZodForm() {
           )}
         </div>
 
-        {/* Home Number with react-phone-input-2 */}
         <div>
           <InputLabel
             sx={{
@@ -263,7 +312,7 @@ export default function ZodForm() {
                 }}
                 inputProps={{
                   name: "home_number",
-                  required: false,
+                  tabIndex: -1,
                 }}
               />
             )}
@@ -291,13 +340,18 @@ export default function ZodForm() {
         render={({ field }) => (
           <Autocomplete
             {...field}
+            value={field.value || ""}
+            openOnFocus
+            clearOnEscape
             options={contactMethods}
+            //@ts-expect-error ....
             filterOptions={(options, state) =>
               handleAutoSelect(
                 options.filter((option) =>
                   matchWordStart(option, state.inputValue)
                 ),
-                field
+                field,
+                setValue
               )
             }
             renderInput={(params) => (
@@ -309,12 +363,12 @@ export default function ZodForm() {
                 helperText={errors.preferred_contact_method?.message}
               />
             )}
-            onChange={(_, value) => field.onChange(value)}
+            onChange={(_, value) => field.onChange(value || "")}
           />
         )}
       />
 
-      <div className="w-full flex flex-nowrap gap-1 justify-between align-bottom items-end">
+      <div className="w-full flex flex-nowrap gap-1 justify-between align-bottom items-start">
         <div className="h-full flex items-end">
           <div>
             <InputLabel sx={{ fontSize: "14px" }} htmlFor="birth_sex">
@@ -326,7 +380,20 @@ export default function ZodForm() {
               render={({ field }) => (
                 <Autocomplete
                   {...field}
+                  value={field.value || ""}
+                  openOnFocus
+                  clearOnEscape
                   options={birthSexOptions}
+                  //@ts-expect-error ....
+                  filterOptions={(options, state) =>
+                    handleAutoSelect(
+                      options.filter((option) =>
+                        matchWordStart(option, state.inputValue)
+                      ),
+                      field,
+                      setValue
+                    )
+                  }
                   sx={{ width: "100%" }}
                   renderInput={(params) => (
                     <TextField
@@ -339,7 +406,7 @@ export default function ZodForm() {
                       helperText={errors.birth_sex?.message}
                     />
                   )}
-                  onChange={(_, value) => field.onChange(value)}
+                  onChange={(_, value) => field.onChange(value || "")}
                 />
               )}
             />
@@ -355,18 +422,21 @@ export default function ZodForm() {
             render={({ field }) => (
               <InputMask
                 {...field}
-                mask="99-99-9999" // Mask for mm-dd-yyyy format
+                mask="99-99-9999"
                 maskChar={null} // No placeholder character
               >
-                {(inputProps) => (
-                  <TextField
-                    {...inputProps}
-                    placeholder="mm-dd-yyyy"
-                    size="small"
-                    error={!!errors.date_of_birth}
-                    helperText={errors.date_of_birth?.message}
-                  />
-                )}
+                {
+                  //@ts-expect-error ....
+                  (inputProps) => (
+                    <TextField
+                      {...inputProps}
+                      placeholder="mm-dd-yyyy"
+                      size="small"
+                      error={!!errors.date_of_birth}
+                      helperText={errors.date_of_birth?.message}
+                    />
+                  )
+                }
               </InputMask>
             )}
           />
@@ -411,13 +481,17 @@ export default function ZodForm() {
         render={({ field }) => (
           <Autocomplete
             {...field}
-            options={insuranceCompanies}
+            value={field.value || ""}
+            openOnFocus
+            clearOnEscape
+            options={insuranceCompaniesList}
             filterOptions={(options, state) =>
               handleAutoSelect(
                 options.filter((option) =>
                   matchWordStart(option, state.inputValue)
                 ),
-                field
+                field,
+                setValue
               )
             }
             renderInput={(params) => (
@@ -429,7 +503,7 @@ export default function ZodForm() {
                 helperText={errors.primary_insurance_company?.message}
               />
             )}
-            onChange={(_, value) => field.onChange(value)}
+            onChange={(_, value) => field.onChange(value || "")}
           />
         )}
       />
@@ -448,13 +522,17 @@ export default function ZodForm() {
         render={({ field }) => (
           <Autocomplete
             {...field}
-            options={insuranceCompanies}
+            value={field.value || ""}
+            openOnFocus
+            clearOnEscape
+            options={insuranceCompaniesList}
             filterOptions={(options, state) =>
               handleAutoSelect(
                 options.filter((option) =>
                   matchWordStart(option, state.inputValue)
                 ),
-                field
+                field,
+                setValue
               )
             }
             renderInput={(params) => (
@@ -466,7 +544,7 @@ export default function ZodForm() {
                 helperText={errors.secondary_insurance_company?.message}
               />
             )}
-            onChange={(_, value) => field.onChange(value)}
+            onChange={(_, value) => field.onChange(value || "")}
           />
         )}
       />
