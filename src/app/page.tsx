@@ -26,6 +26,7 @@ import { referringProvidersList } from "@/data/referring-providers-list";
 const contactMethods = ["Email", "Home Number", "Mobile Number"] as const;
 const birthSexOptions = ["Male", "Female", "Prefer Not to Say"] as const;
 import { insuranceCompaniesList } from "@/data/insurance-companies-list";
+import { usStatesList } from "@/data/us-states-list";
 
 // Define the Zod schema
 const schema = z
@@ -176,6 +177,7 @@ export default function ZodForm() {
               <TextField
                 {...params}
                 size="small"
+                autoFocus
                 label="Physician"
                 error={!!errors.physician}
                 helperText={errors.physician?.message}
@@ -459,13 +461,52 @@ export default function ZodForm() {
           error={!!errors.city}
           helperText={errors.city?.message}
         />
-        <TextField
+
+        <Controller
+          name="state"
+          control={control}
+          render={({ field }) => (
+            <Autocomplete
+              {...field}
+              value={field.value || ""}
+              openOnFocus
+              clearOnEscape
+              options={usStatesList}
+              filterOptions={(options, state) =>
+                handleAutoSelect(
+                  options.filter((option) =>
+                    matchWordStart(option, state.inputValue)
+                  ),
+                  field,
+                  setValue
+                )
+              }
+              sx={{ width: "160px" }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  size="small"
+                  sx={{
+                    width: "160px",
+                  }}
+                  label="State"
+                  error={!!errors.state}
+                  helperText={errors.state?.message}
+                />
+              )}
+              onChange={(_, value) => field.onChange(value || "")}
+            />
+          )}
+        />
+
+        {/* <TextField
           label="State"
           size="small"
           {...register("state")}
           error={!!errors.state}
           helperText={errors.state?.message}
-        />
+        /> */}
+
         <TextField
           label="Postal Code"
           size="small"
