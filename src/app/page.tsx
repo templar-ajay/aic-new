@@ -152,6 +152,7 @@ export default function ZodForm() {
         padding: "12px",
         border: "1px solid black",
         borderRadius: 2,
+        backgroundColor: "#ffffff",
       }}
     >
       <Controller
