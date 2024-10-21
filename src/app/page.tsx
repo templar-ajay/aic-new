@@ -24,7 +24,12 @@ import {
 import { physicianNamesList } from "@/data/physicians-list";
 import { referringProvidersList } from "@/data/referring-providers-list";
 const contactMethods = ["Email", "Home Number", "Mobile Number"] as const;
-const birthSexOptions = ["Male", "Female", "Prefer Not to Say"] as const;
+const birthSexOptions = [
+  "Male",
+  "Female",
+  "Other",
+  "Prefer Not to Say",
+] as const;
 import { insuranceCompaniesList } from "@/data/insurance-companies-list";
 import { usStatesList } from "@/data/us-states-list";
 
