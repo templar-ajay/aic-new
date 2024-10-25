@@ -20,27 +20,6 @@ import {
   validateUsPostCode,
 } from "@/lib/helper";
 
-// data_string =  "{
-//   "physician": "UID_060Z6BZZDCC3FY0987Y4",
-//   "first_name": "Pawan127",
-//   "middle_name": "",
-//   "last_name": "Jangra",
-//   "mobile_number": "4225550132",
-//   "email": "christinapesco@gmail.com",
-//   "address_line_1": "2677 Baithful",
-//   "city": "Baithful",
-//   "state": "CT",
-//   "zip_code": "06080",
-//   "preferred_contact_method": "phone",
-//   "referring_provider": "AARON, GILA",
-//   "date_of_birth": "2000-01-18",
-//   "sex": "Female",
-//   "insurance_company": "AETNA",
-//   "insurance_member_id": "12345678",
-//   "secondary_insurance_company": "BCBS",
-//   "secondary_insurance_member_id": "987654321"
-// }"
-
 // data for the autocomplete fields
 import { physicianNamesList } from "@/data/physicians-list";
 import { referringProvidersList } from "@/data/referring-providers-list";
