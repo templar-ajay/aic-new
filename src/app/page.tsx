@@ -142,7 +142,7 @@ export default function ZodForm() {
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     const _data = data;
     // @ts-expect-error ...
     _data.physician = map_physician[data.physician];
@@ -150,6 +150,20 @@ export default function ZodForm() {
     _data.state = map_US_StatesList[data.state];
 
     console.log(_data);
+
+    try {
+      const response = await fetch(process.env.BACKEND_API_URL!, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(_data),
+      });
+
+      const data = await response.json();
+
+      console.log("response from api", data);
+    } catch (err: any) {
+      console.log("error hitting backend api", err);
+    }
   };
 
   return (
