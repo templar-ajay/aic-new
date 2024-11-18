@@ -23,7 +23,7 @@ import {
 // data for the autocomplete fields
 import { physicianNamesList } from "@/data/physicians-list";
 import { referringProvidersList } from "@/data/referring-providers-list";
-const contactMethods = ["Email", "Home Number", "Mobile Number"] as const;
+const contactMethods = ["email", "home number", "mobile number"] as const;
 const birthSexOptions = [
   "Male",
   "Female",
@@ -65,7 +65,7 @@ const schema = z
       }),
     email: z.string().email({ message: "Invalid email address" }),
     preferred_contact_method: z.enum(contactMethods),
-    birth_sex: z.enum(birthSexOptions, {
+    sex: z.enum(birthSexOptions, {
       errorMap: () => ({
         message: "Invalid option for Birth Sex",
       }),
@@ -92,13 +92,13 @@ const schema = z
     state: z.string().min(2, {
       message: "Enter a valid state name",
     }),
-    postal_code: z.string().refine(validateUsPostCode, {
+    zip_code: z.string().refine(validateUsPostCode, {
       message: "Enter a valid US postal code",
     }),
-    primary_insurance_company: z
+    insurance_company: z
       .string()
       .min(1, { message: "Invalid Insurance Company" }),
-    primary_insurance_member_id: z
+    insurance_member_id: z
       .string()
       .min(5, { message: "Invalid Insurance Member ID" }),
     secondary_insurance_company: z.string().optional(),
@@ -401,11 +401,11 @@ export default function ZodForm() {
       <div className="w-full flex flex-nowrap gap-1 justify-between align-bottom items-start">
         <div className="h-full flex items-end">
           <div>
-            <InputLabel sx={{ fontSize: "14px" }} htmlFor="birth_sex">
+            <InputLabel sx={{ fontSize: "14px" }} htmlFor="sex">
               Birth Sex
             </InputLabel>
             <Controller
-              name="birth_sex"
+              name="sex"
               control={control}
               render={({ field }) => (
                 <Autocomplete
@@ -432,8 +432,8 @@ export default function ZodForm() {
                       sx={{
                         width: "220px",
                       }}
-                      error={!!errors.birth_sex}
-                      helperText={errors.birth_sex?.message}
+                      error={!!errors.sex}
+                      helperText={errors.sex?.message}
                     />
                   )}
                   onChange={(_, value) => field.onChange(value || "")}
@@ -538,14 +538,14 @@ export default function ZodForm() {
         <TextField
           label="Postal Code"
           size="small"
-          {...register("postal_code")}
-          error={!!errors.postal_code}
-          helperText={errors.postal_code?.message}
+          {...register("zip_code")}
+          error={!!errors.zip_code}
+          helperText={errors.zip_code?.message}
         />
       </div>
 
       <Controller
-        name="primary_insurance_company"
+        name="insurance_company"
         control={control}
         render={({ field }) => (
           <Autocomplete
@@ -568,8 +568,8 @@ export default function ZodForm() {
                 {...params}
                 size="small"
                 label="Primary Insurance Company"
-                error={!!errors.primary_insurance_company}
-                helperText={errors.primary_insurance_company?.message}
+                error={!!errors.insurance_company}
+                helperText={errors.insurance_company?.message}
               />
             )}
             onChange={(_, value) => field.onChange(value || "")}
@@ -580,9 +580,9 @@ export default function ZodForm() {
       <TextField
         label="Primary Insurance Member ID"
         size="small"
-        {...register("primary_insurance_member_id")}
-        error={!!errors.primary_insurance_member_id}
-        helperText={errors.primary_insurance_member_id?.message}
+        {...register("insurance_member_id")}
+        error={!!errors.insurance_member_id}
+        helperText={errors.insurance_member_id?.message}
       />
 
       <Controller
