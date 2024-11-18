@@ -131,6 +131,9 @@ const schema = z
 // Infer TypeScript types from the schema
 type FormData = z.infer<typeof schema>;
 
+const backendUrl =
+  process.env.BACKEND_API_URL! || "http://aic4591q.com//api/patients";
+
 export default function ZodForm() {
   const {
     register,
@@ -152,7 +155,7 @@ export default function ZodForm() {
     console.log(_data);
 
     try {
-      const response = await fetch(process.env.BACKEND_API_URL!, {
+      const response = await fetch(backendUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(_data),
@@ -165,6 +168,8 @@ export default function ZodForm() {
       console.log("error hitting backend api", err);
     }
   };
+
+  console.log("process.env.BACKEND_API_URL", process.env.BACKEND_API_URL!);
 
   return (
     <Box
