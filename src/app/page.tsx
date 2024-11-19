@@ -132,7 +132,7 @@ const schema = z
 type FormData = z.infer<typeof schema>;
 
 const backendUrl =
-  process.env.BACKEND_API_URL! || "http://aic4591q.com//api/patients";
+  process.env.BACKEND_API_URL! || "http://aic4591q.com/api/patients";
 
 export default function ZodForm() {
   const {
@@ -151,7 +151,12 @@ export default function ZodForm() {
     _data.physician = map_physician[data.physician];
     // @ts-expect-error ...
     _data.state = map_US_StatesList[data.state];
-
+    if (!data?.secondary_insurance_company) {
+      _data.secondary_insurance_company = "";
+    }
+    if (!data?.home_number) {
+      _data.home_number = "";
+    }
     console.log(_data);
 
     try {
